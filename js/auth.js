@@ -8,7 +8,11 @@ const ERROR_ID = 'login-error';
 
 export function initLogin() {
   const form = document.getElementById(LOGIN_FORM_ID);
-  if (!form) return;
+  const serverUrlInput = document.getElementById('serverUrl');
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+
+  if (!form || !serverUrlInput || !usernameInput || !passwordInput) return;
 
   // Auto-redirect if already logged in
   const existing = credentialsStore.get();
@@ -19,13 +23,13 @@ export function initLogin() {
 
   // If the user pastes an M3U/Xtream URL into the server field, auto-fill the
   // credentials so the required username/password fields stay valid.
-  form.serverUrl.addEventListener('input', (e) => {
+  serverUrlInput.addEventListener('input', (e) => {
     const extracted = extractXtreamCredentials(e.target.value);
-    if (extracted.username && !form.username.value.trim()) {
-      form.username.value = extracted.username;
+    if (extracted.username && !usernameInput.value.trim()) {
+      usernameInput.value = extracted.username;
     }
-    if (extracted.password && !form.password.value) {
-      form.password.value = extracted.password;
+    if (extracted.password && !passwordInput.value) {
+      passwordInput.value = extracted.password;
     }
   });
 
@@ -34,9 +38,9 @@ export function initLogin() {
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
 
-    const rawUrl = form.serverUrl.value;
-    let username = form.username.value.trim();
-    let password = form.password.value;
+    const rawUrl = serverUrlInput.value;
+    let username = usernameInput.value.trim();
+    let password = passwordInput.value;
 
     // Support pasting a full M3U/Xtream URL into the server field.
     // If credentials are present in the URL, use them when the form fields are empty.
@@ -49,6 +53,12 @@ export function initLogin() {
 
     if (!serverUrl) {
       showError('Please enter a valid server URL.');
+      return;
+    }
+
+    // Browsers block plain-HTTP requests from an HTTPS page.
+    if (window.location.protocol === 'https:' && serverUrl.startsWith('http:')) {
+      showError('This page is served over HTTPS, so the browser will block an HTTP Xtream server (mixed content). Host the app over HTTP or use an HTTPS server.');
       return;
     }
 

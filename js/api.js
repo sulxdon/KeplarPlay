@@ -35,7 +35,10 @@ export class XtreamAPI {
   async authenticate() {
     const data = await this.request();
     if (!data || !data.user_info) {
-      throw new Error('Invalid response from server');
+      const preview = typeof data === 'string'
+        ? data.trim().slice(0, 200)
+        : JSON.stringify(data).slice(0, 200);
+      throw new Error(`Invalid response from server (no user_info). First 200 chars: ${preview}`);
     }
     if (data.user_info.auth === 0 || ['Disabled', 'Invalid', 'Banned'].includes(data.user_info.status)) {
       throw new Error(`Account status: ${data.user_info.status || 'unauthorized'}`);

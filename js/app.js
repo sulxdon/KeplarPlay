@@ -696,9 +696,9 @@ function renderSettings(container) {
     submitBtn.innerHTML = '<span>Connecting...</span>';
 
     const { parseXtreamUrl } = await import('./api.js');
-    const serverUrl = parseXtreamUrl(accountForm.serverUrl.value);
-    const username = accountForm.username.value.trim();
-    const password = accountForm.password.value;
+    const serverUrl = parseXtreamUrl(document.getElementById('settings-server').value);
+    const username = document.getElementById('settings-username').value.trim();
+    const password = document.getElementById('settings-password').value;
 
     if (!serverUrl) {
       showToast('Invalid server URL', 'error');

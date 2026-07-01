@@ -1,6 +1,17 @@
 /* KeplarPlay Service Worker */
 
-const CACHE_NAME = 'keplarplay-v2';
+const CACHE_NAME = 'keplarplay-v3';
+
+// Compute the base path where this service worker is served so the cache works
+// whether the app is hosted at the domain root or in a subdirectory.
+const SW_PATH = self.location.pathname;
+const BASE_PATH = SW_PATH.replace(/sw\.js$/, '') || '/';
+
+function getAssetUrl(path) {
+  if (BASE_PATH === '/') return path;
+  return `${BASE_PATH}${path.replace(/^\//, '')}`;
+}
+
 const STATIC_ASSETS = [
   '/index.html',
   '/app.html',
@@ -18,7 +29,7 @@ const STATIC_ASSETS = [
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/maskable-icon-512.png',
-];
+].map(getAssetUrl);
 
 // Install: precache app shell
 self.addEventListener('install', (event) => {
@@ -44,13 +55,8 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: serve cached shell, network-first for API, cache-first for static
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // Never cache Xtream API calls or stream URLs
-  if (
+function isXtreamOrStreamRequest(url) {
+  return (
     url.pathname.includes('player_api.php') ||
     url.pathname.includes('/live/') ||
     url.pathname.includes('/movie/') ||
@@ -58,7 +64,20 @@ self.addEventListener('fetch', (event) => {
     url.pathname.endsWith('.m3u8') ||
     url.pathname.endsWith('.mp4') ||
     url.pathname.endsWith('.ts')
-  ) {
+  );
+}
+
+function isNavigationRequest(request) {
+  return request.mode === 'navigate' || request.destination === 'document';
+}
+
+// Fetch: serve cached shell, network-first for API, cache-first for static
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Never cache Xtream API calls or stream URLs
+  if (isXtreamOrStreamRequest(url)) {
     return;
   }
 
@@ -89,8 +108,9 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // Fallback to app shell for navigation requests when offline
-          if (request.mode === 'navigate') {
-            return caches.match('/app.html') || caches.match('/index.html');
+          if (isNavigationRequest(request)) {
+            return caches.match(getAssetUrl('/app.html'))
+              || caches.match(getAssetUrl('/index.html'));
           }
         });
     })
