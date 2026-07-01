@@ -17,7 +17,7 @@ export class XtreamAPI {
     const extra = new URLSearchParams(extraParams).toString();
     if (extra) url += `&${extra}`;
 
-    const response = await fetch(url, {
+    const response = await fetch(proxifyUrl(url), {
       cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
@@ -109,19 +109,36 @@ export class XtreamAPI {
   getLiveStreamUrl(streamId, extension = 'm3u8') {
     const cleanId = String(streamId).trim();
     const cleanExt = String(extension).trim().replace(/^\./, '');
-    return `${this.baseUrl}/live/${this.username}/${this.password}/${cleanId}.${cleanExt}`;
+    return proxifyUrl(`${this.baseUrl}/live/${this.username}/${this.password}/${cleanId}.${cleanExt}`);
   }
 
   getMovieStreamUrl(streamId, containerExtension = 'mp4') {
     const cleanId = String(streamId).trim();
     const cleanExt = String(containerExtension).trim().replace(/^\./, '');
-    return `${this.baseUrl}/movie/${this.username}/${this.password}/${cleanId}.${cleanExt}`;
+    return proxifyUrl(`${this.baseUrl}/movie/${this.username}/${this.password}/${cleanId}.${cleanExt}`);
   }
 
   getSeriesEpisodeUrl(filename) {
     const cleanFilename = String(filename).trim();
-    return `${this.baseUrl}/series/${this.username}/${this.password}/${cleanFilename}`;
+    return proxifyUrl(`${this.baseUrl}/series/${this.username}/${this.password}/${cleanFilename}`);
   }
+}
+
+function isSecureContext() {
+  return typeof window !== 'undefined' && window.location.protocol === 'https:';
+}
+
+/**
+ * When the app is served over HTTPS and the target URL is HTTP, route the
+ * request through the Netlify Edge Function proxy to avoid mixed-content
+ * blocking. HTTPS targets pass through unchanged.
+ */
+export function proxifyUrl(url) {
+  if (!url) return url;
+  if (!isSecureContext()) return url;
+  if (/^https:\/\//i.test(url)) return url;
+  if (!/^http:\/\//i.test(url)) return url;
+  return `/.netlify/edge-functions/proxy?target=${encodeURIComponent(url)}`;
 }
 
 const API_ENDPOINT_FILES = [

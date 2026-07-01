@@ -56,12 +56,6 @@ export function initLogin() {
       return;
     }
 
-    // Browsers block plain-HTTP requests from an HTTPS page.
-    if (window.location.protocol === 'https:' && serverUrl.startsWith('http:')) {
-      showError('This page is served over HTTPS, so the browser will block an HTTP Xtream server (mixed content). Host the app over HTTP or use an HTTPS server.');
-      return;
-    }
-
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span>Connecting...</span>';
     hideError();

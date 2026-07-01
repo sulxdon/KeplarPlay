@@ -61,6 +61,7 @@ function isXtreamOrStreamRequest(url) {
     url.pathname.includes('/live/') ||
     url.pathname.includes('/movie/') ||
     url.pathname.includes('/series/') ||
+    url.pathname.includes('/.netlify/edge-functions/proxy') ||
     url.pathname.endsWith('.m3u8') ||
     url.pathname.endsWith('.mp4') ||
     url.pathname.endsWith('.ts')
