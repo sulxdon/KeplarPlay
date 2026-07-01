@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — KeplarPlay</title>
+  <meta name="description" content="Browse and play live TV, movies, and series with the KeplarPlay Xtream IPTV player.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a href="index.html" class="sidebar-logo">Keplar<span>Play</span></a>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="sidebar-link active" data-section="home">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          Home
+        </a>
+        <a href="#" class="sidebar-link" data-section="live">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          Live TV
+        </a>
+        <a href="#" class="sidebar-link" data-section="movies">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
+          Movies
+        </a>
+        <a href="#" class="sidebar-link" data-section="series">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line><line x1="7" y1="10" x2="7.01" y2="10"></line><line x1="12" y1="10" x2="12.01" y2="10"></line><line x1="17" y1="10" x2="17.01" y2="10"></line></svg>
+          Series
+        </a>
+        <a href="#" class="sidebar-link" data-section="favorites">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          Favorites
+        </a>
+        <a href="#" class="sidebar-link" data-section="recent">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          Recent
+        </a>
+        <a href="#" class="sidebar-link" data-section="settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Settings
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="account-info">
+          <strong>Account</strong>
+          <div>Status: <span id="account-status">—</span></div>
+          <div>Expires: <span id="account-expiry">—</span></div>
+          <div>Max conn: <span id="account-max-connections">—</span></div>
+        </div>
+        <button id="logout-btn" class="btn btn-secondary" style="width: 100%;">Disconnect</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="top-bar">
+        <div>
+          <p class="section-label" id="page-label">Dashboard</p>
+          <h1 class="page-title" id="page-title">Live TV</h1>
+          <p class="section-desc" id="page-desc">Browse channels and catch the action live.</p>
+        </div>
+        <div class="search-bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="search-input" placeholder="Search channels, movies, series..." autocomplete="off">
+        </div>
+      </div>
+
+      <div id="content-area">
+        <div class="content-grid">
+          <!-- Loading skeletons will be injected here -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Full-screen player overlay -->
+  <div id="player-page" class="player-page">
+    <div class="player-video-stage" id="player-stage">
+      <video id="video-player" playsinline poster=""></video>
+
+      <!-- Loading spinner -->
+      <div id="player-loader" class="player-loader">
+        <div class="loader-spinner"></div>
+      </div>
+
+      <!-- Center play button -->
+      <button id="player-center-play" class="player-center-btn" aria-label="Play/Pause">
+        <svg id="icon-center-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="icon-center-pause" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      </button>
+
+      <!-- Top overlay -->
+      <div class="player-overlay-top">
+        <div class="player-overlay-info">
+          <button id="player-back" class="player-icon-btn" aria-label="Close">✕</button>
+          <div>
+            <p class="section-label" style="margin-bottom: 0.125rem; color: var(--accent-secondary);">Now Playing</p>
+            <h2 id="player-title">Channel Name</h2>
+          </div>
+        </div>
+        <button id="player-debug-toggle" class="btn btn-ghost" type="button">Details</button>
+      </div>
+
+      <!-- Bottom controls -->
+      <div class="player-controls" id="player-controls">
+        <div class="player-progress-area">
+          <span id="player-time-current" class="player-time">0:00</span>
+          <div class="player-progress-track" id="player-progress-track">
+            <div class="player-progress-buffer" id="player-progress-buffer"></div>
+            <div class="player-progress-bar" id="player-progress-bar"></div>
+            <div class="player-progress-thumb" id="player-progress-thumb"></div>
+          </div>
+          <span id="player-time-duration" class="player-time">0:00</span>
+        </div>
+        <div class="player-controls-row">
+          <div class="player-controls-left">
+            <button id="player-play" class="player-icon-btn" aria-label="Play/Pause">
+              <svg id="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              <svg id="icon-pause" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+            <div class="player-volume">
+              <button id="player-mute" class="player-icon-btn" aria-label="Mute">
+                <svg id="icon-volume" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                <svg id="icon-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+              </button>
+              <input type="range" id="player-volume" min="0" max="1" step="0.05" value="1" class="player-volume-slider">
+            </div>
+            <p id="player-meta" class="player-meta">Select a stream to start watching.</p>
+          </div>
+          <div class="player-controls-right">
+            <button id="player-fullscreen" class="player-icon-btn" aria-label="Fullscreen">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="player-info">
+      <div id="player-debug" class="player-debug" style="display: none;">
+        <div class="debug-row"><span>URL:</span> <code id="debug-url">—</code></div>
+        <div class="debug-row"><span>Native HLS:</span> <code id="debug-native">—</code></div>
+        <div class="debug-row"><span>HLS.js:</span> <code id="debug-hlsjs">—</code></div>
+        <div class="debug-row"><span>Status:</span> <code id="debug-status">—</code></div>
+        <div class="debug-row"><span>Last error:</span> <code id="debug-error">—</code></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initPlayer } from './js/player.js';
+    import { initApp } from './js/app.js';
+    initPlayer();
+    initApp();
+  </script>
+</body>
+</html>
