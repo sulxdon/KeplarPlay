@@ -1,6 +1,6 @@
 /* Authentication flow */
 
-import { XtreamAPI, parseXtreamUrl } from './api.js';
+import { XtreamAPI, parseXtreamUrl, extractXtreamCredentials } from './api.js';
 import { credentialsStore } from './storage.js';
 
 const LOGIN_FORM_ID = 'login-form';
@@ -17,16 +17,36 @@ export function initLogin() {
     return;
   }
 
+  // If the user pastes an M3U/Xtream URL into the server field, auto-fill the
+  // credentials so the required username/password fields stay valid.
+  form.serverUrl.addEventListener('input', (e) => {
+    const extracted = extractXtreamCredentials(e.target.value);
+    if (extracted.username && !form.username.value.trim()) {
+      form.username.value = extracted.username;
+    }
+    if (extracted.password && !form.password.value) {
+      form.password.value = extracted.password;
+    }
+  });
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
 
     const rawUrl = form.serverUrl.value;
-    const username = form.username.value.trim();
-    const password = form.password.value;
+    let username = form.username.value.trim();
+    let password = form.password.value;
 
-    const serverUrl = parseXtreamUrl(rawUrl);
+    // Support pasting a full M3U/Xtream URL into the server field.
+    // If credentials are present in the URL, use them when the form fields are empty.
+    const extracted = extractXtreamCredentials(rawUrl);
+    if (!username && extracted.username) username = extracted.username;
+    if (!password && extracted.password) password = extracted.password;
+
+    let serverUrl = parseXtreamUrl(rawUrl);
+    if (!serverUrl && extracted.baseUrl) serverUrl = extracted.baseUrl;
+
     if (!serverUrl) {
       showError('Please enter a valid server URL.');
       return;

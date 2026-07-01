@@ -17,7 +17,10 @@ export class XtreamAPI {
     const extra = new URLSearchParams(extraParams).toString();
     if (extra) url += `&${extra}`;
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
     }
@@ -118,18 +121,64 @@ export class XtreamAPI {
   }
 }
 
+const API_ENDPOINT_FILES = [
+  '/player_api.php',
+  '/get.php',
+  '/panel_api.php',
+  '/xmltv.php',
+];
+
+function normalizeXtreamPath(pathname) {
+  const clean = pathname.replace(/\/$/, '');
+  for (const file of API_ENDPOINT_FILES) {
+    if (clean.endsWith(file)) {
+      return clean.slice(0, -file.length);
+    }
+  }
+  return clean;
+}
+
+/**
+ * Parse a server URL entered by the user.
+ * Accepts plain host URLs and full M3U/Xtream endpoint URLs.
+ * Returns the panel base URL (protocol + host + optional base path).
+ */
 export function parseXtreamUrl(input) {
+  return extractXtreamCredentials(input).baseUrl;
+}
+
+/**
+ * Extract the base URL and credentials from a pasted M3U/Xtream URL.
+ * Example: http://host:8080/get.php?username=u&password=p&type=m3u
+ */
+export function extractXtreamCredentials(input) {
+  const result = { baseUrl: null, username: '', password: '' };
   let url = input.trim();
-  if (!url) return null;
+  if (!url) return result;
   if (!/^https?:\/\//i.test(url)) {
     url = `http://${url}`;
   }
   try {
     const parsed = new URL(url);
-    return `${parsed.protocol}//${parsed.host}`;
+    const pathname = normalizeXtreamPath(parsed.pathname);
+    result.baseUrl = `${parsed.protocol}//${parsed.host}${pathname}`;
+
+    const username = parsed.searchParams.get('username');
+    const password = parsed.searchParams.get('password');
+    if (username) result.username = username;
+    if (password) result.password = password;
+
+    // Some URLs encode credentials in the userinfo portion (rare).
+    if (!result.username && parsed.username) {
+      result.username = decodeURIComponent(parsed.username);
+    }
+    if (!result.password && parsed.password) {
+      result.password = decodeURIComponent(parsed.password);
+    }
   } catch {
-    return null;
+    // Invalid URL
   }
+  return result;
 }
 
 function normalizeEpgListings(listings) {
