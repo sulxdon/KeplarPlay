@@ -19,10 +19,12 @@ import {
   escapeHtml,
 } from './ui.js';
 import { playItem } from './player.js';
+import { initFocusNavigation } from './focus.js';
 
 const SECTIONS = {
   HOME: 'home',
   LIVE: 'live',
+  GUIDE: 'guide',
   MOVIES: 'movies',
   SERIES: 'series',
   FAVORITES: 'favorites',
@@ -44,11 +46,25 @@ export async function initApp() {
   setupNavigation();
   setupSearch();
   setupLogout();
+  registerServiceWorker();
+  initFocusNavigation();
 
   await loadAccountInfo();
 
   currentSection = appState.getLastSection();
   activateSection(currentSection);
+}
+
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+
+  navigator.serviceWorker.register('./sw.js')
+    .then((registration) => {
+      console.log('Service worker registered:', registration.scope);
+    })
+    .catch((err) => {
+      console.warn('Service worker registration failed:', err);
+    });
 }
 
 function setupNavigation() {
@@ -132,6 +148,7 @@ function updatePageTitle(section) {
   const config = {
     [SECTIONS.HOME]: { label: 'Dashboard', title: 'Home', desc: 'Continue watching and discover what’s next.' },
     [SECTIONS.LIVE]: { label: 'Dashboard', title: 'Live TV', desc: 'Browse channels and catch the action live.' },
+    [SECTIONS.GUIDE]: { label: 'Dashboard', title: 'TV Guide', desc: 'See what’s on now and what’s coming up.' },
     [SECTIONS.MOVIES]: { label: 'Dashboard', title: 'Movies', desc: 'Stream the latest films on demand.' },
     [SECTIONS.SERIES]: { label: 'Dashboard', title: 'Series', desc: 'Binge full seasons and episodes.' },
     [SECTIONS.FAVORITES]: { label: 'Dashboard', title: 'Favorites', desc: 'Your saved channels and shows.' },
@@ -153,6 +170,11 @@ async function renderCurrentSection() {
 
   if (currentSection === SECTIONS.HOME) {
     await renderHome(container);
+    return;
+  }
+
+  if (currentSection === SECTIONS.GUIDE) {
+    await renderGuide(container);
     return;
   }
 
@@ -291,6 +313,199 @@ async function renderHome(container) {
   }
 }
 
+async function renderGuide(container) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'guide-wrapper';
+
+  // Header with category tabs and jump-to-now button
+  const header = document.createElement('div');
+  header.className = 'guide-header';
+  wrapper.appendChild(header);
+
+  const content = document.createElement('div');
+  content.className = 'guide-content';
+  const loadingGrid = createLoadingGrid();
+  loadingGrid.className = `${loadingGrid.className} guide-loading`;
+  content.appendChild(loadingGrid);
+  wrapper.appendChild(content);
+
+  container.appendChild(wrapper);
+
+  try {
+    const categories = await getCategories(SECTIONS.LIVE);
+    const channels = await getContent(SECTIONS.LIVE, activeCategory === 'all' ? null : activeCategory);
+    const filteredChannels = filterItems(channels, searchQuery).slice(0, 60);
+
+    header.innerHTML = '';
+    header.appendChild(createCategoryTabs(categories, activeCategory, (id) => {
+      activeCategory = id;
+      renderCurrentSection();
+    }));
+
+    const nowBtn = document.createElement('button');
+    nowBtn.className = 'btn btn-secondary guide-now-btn';
+    nowBtn.innerHTML = '<span>Jump to Now</span>';
+    nowBtn.addEventListener('click', () => scrollGuideToNow(content));
+    header.appendChild(nowBtn);
+
+    content.innerHTML = '';
+
+    if (filteredChannels.length === 0) {
+      content.appendChild(createEmptyState('No channels', 'Try a different category or search term.'));
+      return;
+    }
+
+    const epgData = await api.getEpgForChannels(filteredChannels, 4);
+    renderGuideGrid(content, epgData);
+    requestAnimationFrame(() => scrollGuideToNow(content));
+  } catch (err) {
+    console.error('Guide render error:', err);
+    content.innerHTML = '';
+    content.appendChild(createEmptyState('Error loading guide', err.message || 'Please try again.'));
+  }
+}
+
+function renderGuideGrid(container, epgData) {
+  const windowHours = 6;
+  const pxPerHour = 120;
+  const totalWidth = windowHours * pxPerHour;
+  const now = Date.now();
+  const windowStart = now - 60 * 60 * 1000; // 1 hour ago
+  const windowEnd = windowStart + windowHours * 60 * 60 * 1000;
+
+  const grid = document.createElement('div');
+  grid.className = 'guide-grid';
+  grid.style.setProperty('--guide-timeline-width', `${totalWidth}px`);
+
+  // Timeline header
+  const headerRow = document.createElement('div');
+  headerRow.className = 'guide-row guide-row-header';
+  headerRow.innerHTML = `
+    <div class="guide-channel-col">
+      <span class="text-mono">Channel</span>
+    </div>
+    <div class="guide-timeline">
+      ${renderTimeMarkers(windowStart, windowEnd, totalWidth)}
+    </div>
+  `;
+  grid.appendChild(headerRow);
+
+  // Current time indicator line (absolute across all rows)
+  const nowPct = ((now - windowStart) / (windowEnd - windowStart)) * 100;
+  const nowLine = document.createElement('div');
+  nowLine.className = 'guide-now-line';
+  nowLine.style.left = `${nowPct}%`;
+  grid.appendChild(nowLine);
+
+  // Channel rows
+  epgData.forEach(({ channel, epg }) => {
+    const row = document.createElement('div');
+    row.className = 'guide-row';
+
+    const logo = sanitizeImageUrl(channel.stream_icon || '');
+    const channelCol = document.createElement('div');
+    channelCol.className = 'guide-channel-col';
+    channelCol.setAttribute('tabindex', '0');
+    channelCol.setAttribute('role', 'button');
+    channelCol.innerHTML = `
+      ${logo ? `<img src="${logo}" alt="" loading="lazy">` : '<div class="guide-channel-placeholder"></div>'}
+      <span class="guide-channel-name">${escapeHtml(channel.name || 'Untitled')}</span>
+    `;
+    channelCol.addEventListener('click', () => handleItemClick(SECTIONS.LIVE, channel));
+    channelCol.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleItemClick(SECTIONS.LIVE, channel);
+      }
+    });
+
+    const timeline = document.createElement('div');
+    timeline.className = 'guide-timeline';
+
+    epg.forEach((program) => {
+      const block = createProgramBlock(program, windowStart, windowEnd, totalWidth, channel);
+      if (block) timeline.appendChild(block);
+    });
+
+    row.appendChild(channelCol);
+    row.appendChild(timeline);
+    grid.appendChild(row);
+  });
+
+  container.appendChild(grid);
+}
+
+function renderTimeMarkers(windowStart, windowEnd, totalWidth) {
+  const duration = windowEnd - windowStart;
+  let html = '';
+  for (let ms = windowStart; ms <= windowEnd; ms += 30 * 60 * 1000) {
+    const pct = ((ms - windowStart) / duration) * 100;
+    const date = new Date(ms);
+    const isHour = date.getMinutes() === 0;
+    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    html += `<div class="guide-time-marker ${isHour ? 'guide-time-marker-hour' : ''}" style="left: ${pct}%;"><span>${time}</span></div>`;
+  }
+  return html;
+}
+
+function createProgramBlock(program, windowStart, windowEnd, totalWidth, channel) {
+  const start = program.start || windowStart;
+  const end = program.end || (start + 30 * 60 * 1000);
+
+  if (end <= windowStart || start >= windowEnd) return null;
+
+  const clippedStart = Math.max(start, windowStart);
+  const clippedEnd = Math.min(end, windowEnd);
+  const duration = windowEnd - windowStart;
+  const left = ((clippedStart - windowStart) / duration) * 100;
+  const width = ((clippedEnd - clippedStart) / duration) * 100;
+  const isNow = Date.now() >= start && Date.now() < end;
+
+  const block = document.createElement('div');
+  block.className = `guide-program ${isNow ? 'guide-program-now' : ''}`;
+  block.setAttribute('tabindex', '0');
+  block.setAttribute('role', 'button');
+  block.style.left = `${left}%`;
+  block.style.width = `${width}%`;
+  block.innerHTML = `
+    <div class="guide-program-title">${escapeHtml(program.title)}</div>
+    <div class="guide-program-time">${formatEpgTime(start)} — ${formatEpgTime(end)}</div>
+  `;
+  block.title = `${program.title}\n${program.description || ''}`;
+
+  block.addEventListener('click', () => handleItemClick(SECTIONS.LIVE, channel));
+  block.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleItemClick(SECTIONS.LIVE, channel);
+    }
+  });
+  return block;
+}
+
+function formatEpgTime(timestamp) {
+  if (!timestamp) return '';
+  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function scrollGuideToNow(container) {
+  const grid = container.querySelector('.guide-grid');
+  if (!grid) return;
+  const timeline = grid.querySelector('.guide-timeline');
+  if (!timeline) return;
+  const nowLine = grid.querySelector('.guide-now-line');
+  if (!nowLine) return;
+
+  const timelineRect = timeline.getBoundingClientRect();
+  const lineLeft = parseFloat(nowLine.style.left) / 100 * timelineRect.width;
+  const scrollTarget = lineLeft - timelineRect.width * 0.25;
+
+  grid.scrollTo({
+    left: Math.max(0, scrollTarget),
+    behavior: 'smooth',
+  });
+}
+
 async function loadRecommendations() {
   const recommendations = [];
   try {
@@ -318,6 +533,8 @@ function createCarouselItem(section, item) {
 
   const el = document.createElement('div');
   el.className = 'home-carousel-item';
+  el.setAttribute('tabindex', '0');
+  el.setAttribute('role', 'button');
   el.innerHTML = `
     <div class="home-carousel-image">
       ${image ? `<img src="${image}" alt="" loading="lazy">` : ''}
@@ -326,6 +543,13 @@ function createCarouselItem(section, item) {
     </div>
     <div class="home-carousel-title">${escapeHtml(title)}</div>
   `;
+
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleItemClick(section, item);
+    }
+  });
 
   if (image) {
     const img = el.querySelector('img');
@@ -658,6 +882,8 @@ async function openSeriesModal(series) {
       episodes.forEach((ep) => {
         const epItem = document.createElement('div');
         epItem.className = 'episode-item';
+        epItem.setAttribute('tabindex', '0');
+        epItem.setAttribute('role', 'button');
         epItem.innerHTML = `
           <span class="episode-number">${ep.episode_num}</span>
           <div>
@@ -665,6 +891,23 @@ async function openSeriesModal(series) {
             <div style="font-size: 0.8125rem; color: var(--text-secondary);">Season ${seasonNum}</div>
           </div>
         `;
+        epItem.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            modal.close();
+            const filename = ep.container_extension && !String(ep.id).endsWith(ep.container_extension)
+              ? `${ep.id}.${ep.container_extension}`
+              : ep.id;
+            playItem({
+              section: SECTIONS.SERIES,
+              item: { ...ep, series_id: series.series_id },
+              url: api.getSeriesEpisodeUrl(filename),
+              title: `${series.name} — S${seasonNum}E${ep.episode_num}`,
+              meta: ep.info?.plot || '',
+              poster: sanitizeImageUrl(series.cover) || '',
+            });
+          }
+        });
         epItem.addEventListener('click', () => {
           modal.close();
           const filename = ep.container_extension && !String(ep.id).endsWith(ep.container_extension)

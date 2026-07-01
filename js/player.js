@@ -119,6 +119,10 @@ function bindKeyboard() {
   document.addEventListener('keydown', (e) => {
     if (!els.page?.classList.contains('show')) return;
 
+    // If a player control is focused, let the focus manager handle arrow navigation
+    const active = document.activeElement;
+    const controlFocused = active?.closest('.player-controls, .player-overlay-top');
+
     switch (e.key) {
       case ' ':
       case 'k':
@@ -126,18 +130,22 @@ function bindKeyboard() {
         togglePlay();
         break;
       case 'ArrowLeft':
+        if (controlFocused) return;
         e.preventDefault();
         seekRelative(-10);
         break;
       case 'ArrowRight':
+        if (controlFocused) return;
         e.preventDefault();
         seekRelative(10);
         break;
       case 'ArrowUp':
+        if (controlFocused) return;
         e.preventDefault();
         changeVolume(0.1);
         break;
       case 'ArrowDown':
+        if (controlFocused) return;
         e.preventDefault();
         changeVolume(-0.1);
         break;
@@ -165,6 +173,11 @@ function bindInactivity() {
   els.stage?.addEventListener('mouseleave', startHideTimer);
   els.stage?.addEventListener('click', showControls);
   els.stage?.addEventListener('touchstart', showControls);
+
+  // Show controls when any player control receives focus
+  els.stage?.addEventListener('focusin', () => {
+    showControls();
+  });
 }
 
 function showControls() {

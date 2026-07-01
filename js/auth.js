@@ -42,7 +42,17 @@ export function initLogin() {
       credentialsStore.set({ serverUrl, username, password, info: data.user_info });
       window.location.href = 'app.html';
     } catch (err) {
-      showError(err.message || 'Failed to connect. Check your credentials and server URL.');
+      console.error('Login error:', err);
+      let message = err.message || 'Failed to connect. Check your credentials and server URL.';
+
+      // Detect common failure types
+      if (err.name === 'TypeError' && message.toLowerCase().includes('fetch')) {
+        message = `Network error: could not reach ${serverUrl}. This is usually CORS blocked or the server is unreachable.`;
+      } else if (message.includes('Failed to fetch')) {
+        message = `Could not connect to ${serverUrl}/player_api.php. The server may be offline, the URL may be wrong, or CORS may be blocking the request.`;
+      }
+
+      showError(message);
       submitBtn.disabled = false;
       submitBtn.innerHTML = originalText;
     }

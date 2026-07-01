@@ -1,5 +1,23 @@
 /* Twitch Rivals Aesthetic — Components */
 
+/* Focus ring — arrow-pad / TV remote navigation */
+:focus-visible,
+.is-focused {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent-primary) 40%, transparent);
+  position: relative;
+  z-index: 10;
+}
+
+/* Keep native focus invisible where we manage it ourselves */
+.card:focus,
+.guide-channel-col:focus,
+.guide-program:focus,
+.episode-item:focus {
+  outline: none;
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;

@@ -8,9 +8,12 @@ A dark, cinematic, browser-based Xtream IPTV player built with the [Twitch Rival
 
 - **Dark cinematic UI** — deep blacks, neon purple / magenta / cyan accents, bold typography
 - **Live TV** — browse by category, channel logos, quick search
+- **TV Guide / EPG** — see what's on now and what's coming up across live channels, then click to watch
 - **Movies & Series** — poster grids, category filtering, episode selectors
 - **Built-in player** — HLS.js powered playback for `.m3u8` streams with HTML5 fallback
 - **Favorites & Recently Watched** — saved locally in your browser
+- **PWA support** — installable app with offline app-shell caching
+- **TV / arrow-pad navigation** — use arrow keys, Enter, and Back to browse without a mouse
 - **Responsive layout** — works on desktop and mobile
 - **No build step** — open `index.html` in a browser and go
 
@@ -41,7 +44,11 @@ A dark, cinematic, browser-based Xtream IPTV player built with the [Twitch Rival
 │   ├── app.js          # Dashboard router & content rendering
 │   ├── player.js       # HLS.js video player logic
 │   ├── ui.js           # DOM rendering helpers
-│   └── storage.js      # localStorage helpers
+│   ├── storage.js      # localStorage helpers
+│   └── focus.js        # Arrow-pad / TV remote focus navigation
+├── sw.js               # Service worker for offline app shell
+├── manifest.json       # PWA manifest
+├── icons/              # App icons
 └── README.md
 ```
 

@@ -80,6 +80,26 @@ export class XtreamAPI {
     return this.request('get_short_epg', { stream_id: streamId, limit });
   }
 
+  async getFullEpg(streamId) {
+    return this.request('get_simple_data_table', { stream_id: streamId });
+  }
+
+  async getEpgForChannels(channels, limit = 4) {
+    const results = await Promise.allSettled(
+      channels.map(async (channel) => {
+        const data = await this.getShortEpg(channel.stream_id, limit);
+        return {
+          channel,
+          epg: normalizeEpgListings(data?.epg_listings || (Array.isArray(data) ? data : [])),
+        };
+      })
+    );
+
+    return results
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => r.value);
+  }
+
   getLiveStreamUrl(streamId, extension = 'm3u8') {
     const cleanId = String(streamId).trim();
     const cleanExt = String(extension).trim().replace(/^\./, '');
@@ -110,4 +130,59 @@ export function parseXtreamUrl(input) {
   } catch {
     return null;
   }
+}
+
+function normalizeEpgListings(listings) {
+  if (!Array.isArray(listings)) return [];
+
+  return listings.map((item) => {
+    const start = parseEpgTimestamp(item.start_timestamp || item.start);
+    const end = parseEpgTimestamp(item.stop_timestamp || item.end || item.stop);
+
+    return {
+      id: item.id || '',
+      title: decodeEpgText(item.title) || 'No title',
+      description: decodeEpgText(item.description) || '',
+      start,
+      end,
+      startText: item.start || '',
+      endText: item.stop || item.end || '',
+    };
+  });
+}
+
+function parseEpgTimestamp(value) {
+  if (!value) return null;
+  if (typeof value === 'number') return value * 1000;
+  const num = Number(value);
+  if (!Number.isNaN(num) && String(value).length <= 12) {
+    return num * 1000;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.getTime();
+}
+
+function decodeEpgText(value) {
+  if (value == null) return '';
+  const text = String(value).trim();
+  if (!text) return '';
+
+  // Some Xtream panels return base64-encoded strings; try to decode only
+  // if the value looks like base64 and decodes to readable text.
+  const clean = text.replace(/\s/g, '');
+  if (/^[A-Za-z0-9+/=]+$/.test(clean) && clean.length % 4 === 0 && clean.length > 8) {
+    try {
+      const decoded = atob(clean);
+      if (
+        decoded &&
+        /^[\x20-\x7E\s]+$/.test(decoded) &&
+        /[a-zA-Z]{2,}/.test(decoded)
+      ) {
+        return decoded.trim();
+      }
+    } catch {
+      // fall through
+    }
+  }
+  return text;
 }

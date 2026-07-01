@@ -12,7 +12,16 @@ export function createCard({
 }) {
   const card = document.createElement('div');
   card.className = 'card';
+  card.setAttribute('tabindex', '0');
+  card.setAttribute('role', 'button');
   if (onClick) card.addEventListener('click', onClick);
+
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick?.();
+    }
+  });
 
   const imgSrc = image || '';
   const hasImage = Boolean(imgSrc);
